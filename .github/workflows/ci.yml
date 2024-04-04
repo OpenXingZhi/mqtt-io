@@ -5,10 +5,11 @@ on:
   - release
 jobs:
   test:
+    if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: ['3.8', '3.10', '3.12']
+        python-version: ["3.8", "3.10", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -50,35 +51,53 @@ jobs:
   build_docker_image:
     name: Build Docker Image
     if: (github.event_name == 'release' && github.event.action == 'created') || github.event_name == 'push'
-    runs-on: ubuntu-20.04
-    needs: test
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: docker/setup-qemu-action@v1
-      - id: buildx
-        uses: docker/setup-buildx-action@v1
-      - uses: docker/login-action@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/mqtt-io
+            ghcr.io/${{ github.repository }}
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-      - if: github.event_name == 'release' && github.event.action == 'created'
-        run: |
-          # Remove prefix release
-          TAG_NAME=${GITHUB_REF##*/}
-          # Change slashes to hyphens
-          TAG_NAME=${TAG_NAME//\//-}
-          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t flyte/mqtt-io:${TAG_NAME} -t flyte/mqtt-io:latest --push .
-      - if: github.event_name == 'push'
-        run: |
-          # Remove prefix push
-          TAG_NAME=${GITHUB_REF##*/}
-          # Change slashes to hyphens
-          TAG_NAME=${TAG_NAME//\//-}
-          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t flyte/mqtt-io:${TAG_NAME} --push .
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64/v8
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   generate_docs:
     name: Generate Documentation
-    if: github.event_name == 'push'
+    if: github.event_name == 'release' && github.event.action == 'created'
     concurrency: generate_docs
     runs-on: ubuntu-20.04
     steps:
@@ -109,4 +128,3 @@ jobs:
           git status
           poetry install
           poetry run python docs_src/generate_docs.py
-
