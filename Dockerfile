@@ -16,7 +16,7 @@ FROM base AS requirements
 ARG TARGETPLATFORM
 RUN if [ "${TARGETPLATFORM}" = "linux/arm/v7" ]; then \
         apt-get update && \
-        apt-get install -y lsb-release curl g++ pkg-config libssl-dev libffi-dev && \
+        apt-get install -y lsb-release curl g++ pkg-config libssl-dev libffi-dev libusb-1.0-0-dev libudev-dev && \
         \
         (curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y) \
     fi
