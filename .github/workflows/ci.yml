@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.8]
 
     steps:
       - uses: actions/checkout@v2
@@ -51,7 +51,6 @@ jobs:
     name: Build Docker Image
     if: (github.event_name == 'release' && github.event.action == 'created') || github.event_name == 'push'
     runs-on: ubuntu-20.04
-    needs: test
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-qemu-action@v1
@@ -74,7 +73,7 @@ jobs:
           TAG_NAME=${GITHUB_REF##*/}
           # Change slashes to hyphens
           TAG_NAME=${TAG_NAME//\//-}
-          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t flyte/mqtt-io:${TAG_NAME} --push .
+          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t chuxubank/mqtt-io:${TAG_NAME} --push .
 
   generate_docs:
     name: Generate Documentation
@@ -100,4 +99,3 @@ jobs:
           pip install poetry
           poetry install
           poetry run python docs_src/generate_docs.py
-

@@ -14,6 +14,8 @@ CONFIG_SCHEMA = {
     "read_size": {"type": "integer", "required": True, "empty": True},
 }
 
+# pylint: disable=c-extension-no-member
+
 
 class Stream(GenericStream):
     """
@@ -35,10 +37,7 @@ class Stream(GenericStream):
 
     def read(self) -> Optional[bytes]:
         data = self.device.read(self.config["read_size"])
-        if data:
-            return bytes(data)
-        else:
-            return None
+        return bytes(data) or None
 
     def write(self, data: bytes) -> None:
         self.device.write(data)
