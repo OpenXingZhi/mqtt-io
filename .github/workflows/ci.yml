@@ -73,7 +73,7 @@ jobs:
           TAG_NAME=${GITHUB_REF##*/}
           # Change slashes to hyphens
           TAG_NAME=${TAG_NAME//\//-}
-          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t chuxubank/mqtt-io:${TAG_NAME} --push .
+          docker buildx build --platform linux/arm64/v8 -t chuxubank/mqtt-io:${TAG_NAME} --push .
 
   generate_docs:
     name: Generate Documentation
