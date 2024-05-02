@@ -17,6 +17,8 @@ backoff = "^1.10.0"
 confp = "^0.4.0"
 # Fix for poetry/docutils related bug
 docutils = "0.18.1"
+# Avoid markupsafe remove soft_unicode issue: https://stackoverflow.com/a/72206981/9506312
+markupsafe = "2.0.1"
 pyusb = "^1.2.1"
 hidapi = "^0.14.0"
 
