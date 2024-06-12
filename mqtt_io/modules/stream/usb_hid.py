@@ -30,8 +30,9 @@ class Stream(GenericStream):
         import usb.util  # type: ignore
 
         # Setting up the USB HID connection
-        VENDOR_ID = hex(self.config["vid"])
-        PRODUCT_ID = hex(self.config["pid"])
+        VENDOR_ID = self.config["vid"]
+        PRODUCT_ID = self.config["pid"]
+        print("Finding device:", hex(VENDOR_ID), hex(PRODUCT_ID))
         self.dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
         # was it found?
         if self.dev is None:
