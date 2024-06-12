@@ -12,6 +12,7 @@ CONFIG_SCHEMA = {
     "vid": {"type": "integer", "required": True, "empty": False},
     "pid": {"type": "integer", "required": True, "empty": False},
     "read_size": {"type": "integer", "required": True, "empty": True},
+    "read_timeout": {"type": "integer", "default": 1, "required": False, "empty": True},
     "write_size": {"type": "integer", "required": True, "empty": True},
     "interface": {"type": "integer", "required": True, "empty": True},
 }
@@ -69,8 +70,13 @@ class Stream(GenericStream):
         print("Endpoint Out:\n", self.epOut)
 
     def read(self) -> Optional[bytes]:
-        data = self.epIn.read(self.config["read_size"])
-        return bytes(data) or None
+        try:
+            result = bytes(
+                self.epIn.read(self.config["read_size"], self.config["read_timeout"])
+            )
+        except Exception:
+            result = None
+        return result
 
     def write(self, data: bytes) -> None:
         byte_list = list(data)
