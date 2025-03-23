@@ -1,9 +1,9 @@
+import sys
 import usb.core
 import usb.util
-import sys
 
-VENDOR_ID = 0x0091
-PRODUCT_ID = 0xFFFE
+VENDOR_ID = 0xFFFE
+PRODUCT_ID = 0x0091
 
 
 # 输入字节串 bytes 到输出端口 outPoint，每次发送 64 字节
@@ -22,11 +22,30 @@ def sendBytes(bytes, outPoint):
         outPoint.write(chunk)
 
 
+def list_devices():
+    """Lists all connected USB devices."""
+    devices = usb.core.find(find_all=True)
+    if devices:
+        print("Connected USB Devices:")
+        for dev in devices:
+            try:
+                print(
+                    f"  Vendor: 0x{dev.idVendor:04X}, Product: 0x{dev.idProduct:04X}, "
+                    f"Manufacturer: {dev.manufacturer}, Product Name: {dev.product}"
+                )
+            except usb.core.USBError as e:
+                print(f"  Error accessing device: {e}")
+    else:
+        print("No USB devices found.")
+
+
 def logData(data):
     return " ".join([f"0x{byte:02X}" for byte in data])
 
 
 dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+
+list_devices()
 
 # was it found?
 if dev is None:
@@ -39,7 +58,7 @@ cfg = dev.get_active_configuration()
 
 print("Active cfg:\n", cfg)
 
-intf = cfg[(1, 0)]
+intf = cfg[(0, 0)]
 
 print("Interface:\n", intf)
 
@@ -73,7 +92,7 @@ except Exception as e:
 print("Endpoint In:\n", epIn)
 print("Endpoint Out:\n", epOut)
 
-data = bytes.fromhex("55 AA 01 00 00 FE")
+data = bytes.fromhex("08 AA 06 FF 78 01 96 A1")
 print("Data:\n", logData(data))
 
 sendBytes(data, epOut)
