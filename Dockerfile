@@ -24,8 +24,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir poetry && \
-    poetry export -o /requirements.txt && \
+
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    uv sync --no-dev && \
+    uv pip freeze > requirements.txt && \
     mkdir -p /home/mqtt_io && \
     python -m venv /home/mqtt_io/venv && \
     /home/mqtt_io/venv/bin/pip install wheel
