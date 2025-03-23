@@ -103,3 +103,4 @@ ENV/
 # User's Config File
 config.yml
 
+.aider*
