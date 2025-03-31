@@ -80,7 +80,7 @@ epOut = usb.util.find_descriptor(
 assert epOut is not None
 
 try:
-    dev.detach_kernel_driver(1)
+    dev.detach_kernel_driver(0)
 except Exception as e:
     pass
 
