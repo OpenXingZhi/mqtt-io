@@ -57,7 +57,7 @@ class Stream(GenericStream):
         assert self.epOut is not None
 
         try:
-            self.dev.detach_kernel_driver(1)
+            self.dev.detach_kernel_driver(self.config["interface"])
         except Exception as e:
             pass
 
