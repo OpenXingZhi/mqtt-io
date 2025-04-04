@@ -14,6 +14,12 @@ CONFIG_SCHEMA = {
     "read_timeout": {"type": "integer", "default": 1, "required": False, "empty": True},
     "write_size": {"type": "integer", "required": True, "empty": True},
     "interface": {"type": "integer", "required": True, "empty": True},
+    "reconnect_interval": {
+        "type": "integer",
+        "default": 2,
+        "required": False,
+        "empty": True,
+    },
 }
 
 
@@ -36,7 +42,7 @@ class Stream(GenericStream):
             if self.dev is not None:
                 break
             print("Device not found, retrying in 2s...")
-            time.sleep(2)
+            time.sleep(self.config["reconnect_interval"])
 
         try:
             self.dev.set_configuration()
