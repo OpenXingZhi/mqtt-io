@@ -5,6 +5,9 @@ import usb.util
 VENDOR_ID = 0xFFFE
 PRODUCT_ID = 0x0091
 
+# 设定 interface 0
+INTERFACE = 0
+
 
 # 输入字节串 bytes 到输出端口 outPoint，每次发送 64 字节
 def sendBytes(bytes, outPoint):
@@ -43,6 +46,22 @@ def logData(data):
     return " ".join([f"0x{byte:02X}" for byte in data])
 
 
+def detach_all_interfaces(dev):
+    """Detach all kernel drivers for the device's interfaces."""
+    for cfg in dev:
+        for intf in cfg:
+            try:
+                if dev.is_kernel_driver_active(intf.bInterfaceNumber):
+                    dev.detach_kernel_driver(intf.bInterfaceNumber)
+                    print(
+                        f"Detached kernel driver from interface {intf.bInterfaceNumber}"
+                    )
+            except usb.core.USBError as e:
+                print(
+                    f"Could not detach kernel driver from interface {intf.bInterfaceNumber}: {e}"
+                )
+
+
 dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
 
 list_devices()
@@ -51,15 +70,13 @@ list_devices()
 if dev is None:
     raise ValueError("Device not found")
 
-for cfg in dev:
-    print("Getting cfg:\n", cfg)
+detach_all_interfaces(dev)  # Detach all interfaces
 
 cfg = dev.get_active_configuration()
-
 print("Active cfg:\n", cfg)
 
-intf = cfg[(0, 0)]
-
+# Set the interface to 0 at the top
+intf = cfg[(INTERFACE, 0)]
 print("Interface:\n", intf)
 
 epIn = usb.util.find_descriptor(
@@ -78,11 +95,6 @@ epOut = usb.util.find_descriptor(
 )
 
 assert epOut is not None
-
-try:
-    dev.detach_kernel_driver(0)
-except Exception as e:
-    pass
 
 try:
     dev.set_configuration()
@@ -105,5 +117,5 @@ try:
 except KeyboardInterrupt:
     pass
 finally:
-    usb.util.release_interface(dev, 0)
+    usb.util.release_interface(dev, INTERFACE)
     usb.util.dispose_resources(dev)
