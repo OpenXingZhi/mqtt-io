@@ -58,7 +58,9 @@ class Stream(GenericStream):
 
         try:
             self.dev.detach_kernel_driver(self.config["interface"])
-        except Exception as e:
+            print(f"Kernel driver detached from interface {self.config['interface']}")
+        except usb.core.USBError as e:
+            print(f"Could not detach kernel driver: {e}")
             pass
 
         try:
@@ -86,9 +88,14 @@ class Stream(GenericStream):
             chunk = byte_list[i : i + chunk_size]
             if len(chunk) < chunk_size:
                 chunk.extend([0] * (chunk_size - len(chunk)))
-            self.epOut.write(chunk)
+            try:
+                self.epOut.write(chunk)
+            except Exception as e:
+                print("Device disconnected. Attempting to reconnect...")
+                self.cleanup()
+                self.setup_module()  # Reinitialize the device
+                self.epOut.write(chunk)  # Retry the write
 
     def cleanup(self) -> None:
-        usb.util.release_interface(self.dev, self.epIn)
-        usb.util.release_interface(self.dev, self.epOut)
+        usb.util.release_interface(self.dev, self.config["interface"])
         usb.util.dispose_resources(self.dev)
