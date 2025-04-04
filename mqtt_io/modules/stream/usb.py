@@ -91,8 +91,13 @@ class Stream(GenericStream):
             try:
                 self.epOut.write(chunk)
             except Exception as e:
+                # pylint: disable=import-outside-toplevel,attribute-defined-outside-init
+                # pylint: disable=import-error,no-member
+                import time
+
                 print("Device disconnected. Attempting to reconnect...")
                 self.cleanup()
+                time.sleep(0.5)
                 self.setup_module()  # Reinitialize the device
                 self.epOut.write(chunk)  # Retry the write
 
