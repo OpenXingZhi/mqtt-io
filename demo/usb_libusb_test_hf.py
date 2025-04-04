@@ -1,6 +1,7 @@
 import sys
 import usb.core
 import usb.util
+import time
 
 VENDOR_ID = 0xFFFE
 PRODUCT_ID = 0x0091
@@ -104,16 +105,15 @@ except Exception as e:
 print("Endpoint In:\n", epIn)
 print("Endpoint Out:\n", epOut)
 
-data = bytes.fromhex("08 AA 06 FF 78 01 96 A1")
-print("Data:\n", logData(data))
-
-sendBytes(data, epOut)
-
 try:
     while True:
+        data = bytes.fromhex("08 AA 07 FF FE 01 04 4B 66")
+        print("Data:\n", logData(data))
+        sendBytes(data, epOut)
         recv = epIn.read(1024)
         recv_data = " ".join(hex(x) for x in recv)
         print("Received data:\n", recv_data)
+        time.sleep(2)
 except KeyboardInterrupt:
     pass
 finally:
