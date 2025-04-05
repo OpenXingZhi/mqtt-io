@@ -76,6 +76,16 @@ detach_all_interfaces(dev)  # Detach all interfaces
 cfg = dev.get_active_configuration()
 print("Active cfg:\n", cfg)
 
+try:
+    usb.util.claim_interface(dev, INTERFACE)
+except Exception as e:
+    print("Error claim interface:", e)
+
+try:
+    dev.set_configuration()
+except Exception as e:
+    print("Error setting configuration:", e)
+
 # Set the interface to 0 at the top
 intf = cfg[(INTERFACE, 0)]
 print("Interface:\n", intf)
@@ -96,11 +106,6 @@ epOut = usb.util.find_descriptor(
 )
 
 assert epOut is not None
-
-try:
-    dev.set_configuration()
-except Exception as e:
-    print("Error setting configuration:", e)
 
 print("Endpoint In:\n", epIn)
 print("Endpoint Out:\n", epOut)
