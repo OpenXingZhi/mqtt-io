@@ -1,5 +1,7 @@
 Unreleased
 ==========
+- Reopen any stream after a failed read or write, instead of polling a dead
+  handle. A USB read timeout still means no bytes were waiting.
 - Drain a stream as soon as a read returns data, instead of waiting another
   ``read_interval`` before publishing the next chunk.
 

@@ -2,6 +2,7 @@
 USB
 """
 
+import errno
 from typing import Optional
 
 from . import GenericStream
@@ -12,7 +13,12 @@ CONFIG_SCHEMA = {
     "vid": {"type": "integer", "required": True, "empty": False},
     "pid": {"type": "integer", "required": True, "empty": False},
     "read_size": {"type": "integer", "required": True, "empty": True},
-    "read_timeout": {"type": "integer", "default": 1, "required": False, "empty": True},
+    "read_timeout": {
+        "type": "integer",
+        "default": 1000,
+        "required": False,
+        "empty": True,
+    },
     "write_size": {"type": "integer", "required": True, "empty": True},
     "interface": {"type": "integer", "required": True, "empty": True},
 }
@@ -23,6 +29,9 @@ CONFIG_SCHEMA = {
 class Stream(GenericStream):
     """
     Stream module for sending to and receiving from USB devices.
+
+    A read timeout means no bytes were waiting. Any other USB error is raised
+    so the stream poller can reopen the device.
     """
 
     def setup_module(self) -> None:
@@ -30,12 +39,10 @@ class Stream(GenericStream):
         import usb.core  # type: ignore
         import usb.util  # type: ignore
 
-        # Setting up the USB connection
         vendor_id = self.config["vid"]
         product_id = self.config["pid"]
         print("Finding device:", hex(vendor_id), hex(product_id))
         self.dev = usb.core.find(idVendor=vendor_id, idProduct=product_id)
-        # was it found?
         if self.dev is None:
             raise ValueError("Device not found")
         cfg = self.dev.get_active_configuration()
@@ -43,15 +50,18 @@ class Stream(GenericStream):
 
         self.ep_in = usb.util.find_descriptor(
             intf,
-            # match the first OUT endpoint
-            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress)
+            custom_match=lambda endpoint: usb.util.endpoint_direction(
+                endpoint.bEndpointAddress
+            )
             == usb.util.ENDPOINT_IN,
         )
         assert self.ep_in is not None
 
         self.ep_out = usb.util.find_descriptor(
             intf,
-            custom_match=lambda e: usb.util.endpoint_direction(e.bEndpointAddress)
+            custom_match=lambda endpoint: usb.util.endpoint_direction(
+                endpoint.bEndpointAddress
+            )
             == usb.util.ENDPOINT_OUT,
         )
         assert self.ep_out is not None
@@ -63,8 +73,8 @@ class Stream(GenericStream):
 
         try:
             self.dev.set_configuration()
-        except usb.core.USBError as e:
-            print("Error setting configuration:", e)
+        except usb.core.USBError as exc:
+            print("Error setting configuration:", exc)
 
         print("Endpoint In:\n", self.ep_in)
         print("Endpoint Out:\n", self.ep_out)
@@ -74,19 +84,20 @@ class Stream(GenericStream):
         import usb.core  # type: ignore
 
         try:
-            result = bytes(
+            return bytes(
                 self.ep_in.read(self.config["read_size"], self.config["read_timeout"])
             )
-        except usb.core.USBError:
-            result = None
-        return result
+        except usb.core.USBError as exc:
+            if getattr(exc, "errno", None) == errno.ETIMEDOUT:
+                return None
+            raise
 
     def write(self, data: bytes) -> None:
         byte_list = list(data)
         total_length = len(byte_list)
         chunk_size = self.config["write_size"]
-        for i in range(0, total_length, chunk_size):
-            chunk = byte_list[i : i + chunk_size]
+        for index in range(0, total_length, chunk_size):
+            chunk = byte_list[index : index + chunk_size]
             if len(chunk) < chunk_size:
                 chunk.extend([0] * (chunk_size - len(chunk)))
             self.ep_out.write(chunk)
